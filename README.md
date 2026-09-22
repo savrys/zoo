@@ -5,7 +5,8 @@ Java 17, JDBC, PostgreSQL, Maven, Apache POI (экспорт в Excel).
 
 ## Структура проекта
 
-zoo-main/
+```text
+zoo/
 ├── pom.xml                               # Конфигурационный файл сборщика Maven и зависимостей (Apache POI, PostgreSQL)
 ├── bookings_report.xlsx                  # Автоматически генерируемый Excel-отчет со списком бронирований
 └── src/
@@ -47,6 +48,7 @@ zoo-main/
         │
         └── resources/                    # Конфигурационные ресурсы приложения
             └── schema.sql                # SQL-скрипт создания таблиц (DDL) и вставки 15+ тестовых записей (DML)
+```
 
 ## Запуск с нуля
 
