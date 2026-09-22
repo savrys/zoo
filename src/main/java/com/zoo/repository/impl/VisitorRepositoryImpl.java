@@ -15,38 +15,35 @@ public class VisitorRepositoryImpl implements VisitorRepository {
     @Override
     public void save(Visitor visitor) {
         String sql = "INSERT INTO visitors (full_name, email, phone) VALUES (?, ?, ?)";
-        try (Connection conn = DriverManager.getConnection(DatabaseConfig.URL, DatabaseConfig.USER, DatabaseConfig.PASSWORD);
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            stmt.setString(1, visitor.getFullName());
-            stmt.setString(2, visitor.getEmail());
-            stmt.setString(3, visitor.getPhone());
-            stmt.executeUpdate();
-
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    visitor.setId(generatedKeys.getInt(1));
-                }
-            }
-        } catch (SQLException e) {
-            throw new DatabaseException("Ошибка при сохранении посетителя", e);
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, visitor.getFullName());
+            pstmt.setString(2, visitor.getEmail());
+            pstmt.setString(3, visitor.getPhone());
+            pstmt.executeUpdate();
+        } catch (SQLException | DatabaseException e) {
+            System.err.println("Ошибка сохранения посетителя: " + e.getMessage());
         }
     }
 
     @Override
     public Optional<Visitor> findById(int id) {
         String sql = "SELECT * FROM visitors WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection(DatabaseConfig.URL, DatabaseConfig.USER, DatabaseConfig.PASSWORD);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapRowToVisitor(rs));
+                    Visitor v = new Visitor();
+                    v.setId(rs.getInt("id"));
+                    v.setFullName(rs.getString("full_name"));
+                    v.setEmail(rs.getString("email"));
+                    v.setPhone(rs.getString("phone"));
+                    return Optional.of(v);
                 }
             }
-        } catch (SQLException e) {
-            throw new DatabaseException("Ошибка при поиске посетителя по ID", e);
+        } catch (SQLException | DatabaseException e) {
+            System.err.println("Ошибка поиска посетителя по ID: " + e.getMessage());
         }
         return Optional.empty();
     }
@@ -54,16 +51,20 @@ public class VisitorRepositoryImpl implements VisitorRepository {
     @Override
     public List<Visitor> findAll() {
         List<Visitor> visitors = new ArrayList<>();
-        String sql = "SELECT * FROM visitors ORDER BY id";
-        try (Connection conn = DriverManager.getConnection(DatabaseConfig.URL, DatabaseConfig.USER, DatabaseConfig.PASSWORD);
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
+        String sql = "SELECT * FROM visitors";
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                visitors.add(mapRowToVisitor(rs));
+                Visitor v = new Visitor();
+                v.setId(rs.getInt("id"));
+                v.setFullName(rs.getString("full_name"));
+                v.setEmail(rs.getString("email"));
+                v.setPhone(rs.getString("phone"));
+                visitors.add(v);
             }
-        } catch (SQLException e) {
-            throw new DatabaseException("Ошибка при получении списка посетителей", e);
+        } catch (SQLException | DatabaseException e) {
+            System.err.println("Ошибка выгрузки посетителей: " + e.getMessage());
         }
         return visitors;
     }
@@ -71,38 +72,27 @@ public class VisitorRepositoryImpl implements VisitorRepository {
     @Override
     public void update(Visitor visitor) {
         String sql = "UPDATE visitors SET full_name = ?, email = ?, phone = ? WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection(DatabaseConfig.URL, DatabaseConfig.USER, DatabaseConfig.PASSWORD);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, visitor.getFullName());
-            stmt.setString(2, visitor.getEmail());
-            stmt.setString(3, visitor.getPhone());
-            stmt.setInt(4, visitor.getId());
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new DatabaseException("Ошибка при обновлении посетителя", e);
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, visitor.getFullName());
+            pstmt.setString(2, visitor.getEmail());
+            pstmt.setString(3, visitor.getPhone());
+            pstmt.setInt(4, visitor.getId());
+            pstmt.executeUpdate();
+        } catch (SQLException | DatabaseException e) {
+            System.err.println("Ошибка обновления посетителя: " + e.getMessage());
         }
     }
 
     @Override
     public void delete(int id) {
         String sql = "DELETE FROM visitors WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection(DatabaseConfig.URL, DatabaseConfig.USER, DatabaseConfig.PASSWORD);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new DatabaseException("Ошибка при удалении посетителя", e);
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+        } catch (SQLException | DatabaseException e) {
+            System.err.println("Ошибка удаления посетителя: " + e.getMessage());
         }
-    }
-
-    private Visitor mapRowToVisitor(ResultSet rs) throws SQLException {
-        return new Visitor(
-                rs.getInt("id"),
-                rs.getString("full_name"),
-                rs.getString("email"),
-                rs.getString("phone")
-        );
     }
 }

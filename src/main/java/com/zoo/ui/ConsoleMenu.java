@@ -1,228 +1,223 @@
 package com.zoo.ui;
 
 import com.zoo.exception.BusinessException;
-import com.zoo.exception.DatabaseException;
 import com.zoo.model.Booking;
 import com.zoo.model.BookingStatus;
 import com.zoo.model.Visitor;
 import com.zoo.service.ZooService;
-import com.zoo.service.impl.ZooServiceImpl;
+import com.zoo.untils.ExcelExporter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 public class ConsoleMenu {
+
     private final ZooService zooService;
     private final Scanner scanner;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public ConsoleMenu() {
-        this.zooService = new ZooServiceImpl();
+    public ConsoleMenu(ZooService zooService) {
+        this.zooService = zooService;
         this.scanner = new Scanner(System.in);
     }
 
     public void start() {
         while (true) {
-            printMainMenu();
-            int choice = readInt("Выберите действие: ");
+            System.out.println("\n========================================");
+            System.out.println("     СИСТЕМА БРОНИРОВАНИЯ ЗООПАРКА     ");
+            System.out.println("========================================");
+            System.out.println("1. Добавить нового посетителя");
+            System.out.println("2. Просмотр списка посетителей");
+            System.out.println("3. Просмотр всех бронирований");
+            System.out.println("4. Создать новое бронирование");
+            System.out.println("5. Изменить статус бронирования");
+            System.out.println("6. Удалить бронирование");
+            System.out.println("7. Поиск и фильтрация бронирований");
+            System.out.println("8. Вывести аналитическую статистику");
+            System.out.println("9. Экспорт данных в Excel (.xlsx)");
+            System.out.println("0. Выход");
+            System.out.print("Выберите действие: ");
+
+            int choice = readIntegerInput();
             try {
                 switch (choice) {
-                    case 1 -> manageVisitors();
-                    case 2 -> manageBookings();
-                    case 3 -> searchBookings();
-                    case 4 -> filterBookings();
-                    case 5 -> showStatistics();
+                    case 1 -> addVisitorForm();
+                    case 2 -> showVisitors();
+                    case 3 -> showAllBookings();
+                    case 4 -> createBookingForm();
+                    case 5 -> updateStatusForm();
+                    case 6 -> deleteBookingForm();
+                    case 7 -> searchAndFilterSubmenu();
+                    case 8 -> showStatistics();
+                    case 9 -> exportToExcelForm();
                     case 0 -> {
-                        System.out.println("Выход из программы...");
+                        System.out.println("Работа завершена. До свидания!");
                         return;
                     }
-                    default -> System.out.println("Неверный пункт меню.");
+                    default -> System.out.println("Ошибка: Выбран несуществующий пункт меню!");
                 }
-            } catch (BusinessException | DatabaseException e) {
-                System.out.println("Ошибка: " + e.getMessage());
+            } catch (BusinessException e) {
+                System.out.println("\n[НАРУШЕНИЕ БИЗНЕС-ПРАВИЛА]: " + e.getMessage());
             } catch (Exception e) {
-                System.out.println("Непредвиденная ошибка: " + e.getMessage());
+                System.out.println("\n[ОШИБКА ПРИЛОЖЕНИЯ]: " + e.getMessage());
             }
         }
     }
 
-    private void printMainMenu() {
-        System.out.println("\n================ ЗООПАРК: БРОНИРОВАНИЕ ПОСЕЩЕНИЙ ================");
-        System.out.println("1. Управление посетителями");
-        System.out.println("2. Управление бронированиями");
-        System.out.println("3. Поиск бронирований");
-        System.out.println("4. Фильтрация бронирований");
-        System.out.println("5. Статистика");
-        System.out.println("0. Выход");
-        System.out.println("==================================================================");
+    private void addVisitorForm() {
+        System.out.println("\n--- Регистрация нового посетителя ---");
+        System.out.print("Введите ФИО: ");
+        String fullName = scanner.nextLine().trim();
+        System.out.print("Введите Email: ");
+        String email = scanner.nextLine().trim();
+        System.out.print("Введите номер телефона: ");
+        String phone = scanner.nextLine().trim();
+
+        zooService.addVisitor(fullName, email, phone);
+        System.out.println("Успешно: Посетитель добавлен в систему.");
     }
 
-    private void manageVisitors() {
-        while (true) {
-            System.out.println("\n--- Посетители ---");
-            System.out.println("1. Добавить посетителя");
-            System.out.println("2. Показать всех");
-            System.out.println("0. Назад");
-            int choice = readInt("Выбор: ");
-            if (choice == 0) break;
-
-            switch (choice) {
-                case 1 -> {
-                    System.out.print("Введите ФИО: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Введите Email: ");
-                    String email = scanner.nextLine();
-                    System.out.print("Введите телефон: ");
-                    String phone = scanner.nextLine();
-                    zooService.addVisitor(name, email, phone);
-                    System.out.println("✅ Посетитель успешно добавлен!");
-                }
-                case 2 -> {
-                    List<Visitor> visitors = zooService.getAllVisitors();
-                    if (visitors.isEmpty()) {
-                        System.out.println("Список пуст.");
-                    } else {
-                        visitors.forEach(System.out::println);
-                    }
-                }
-                default -> System.out.println("Неверный выбор.");
-            }
+    private void showVisitors() {
+        System.out.println("\n--- Список посетителей зоопарка ---");
+        List<Visitor> visitors = zooService.getAllVisitors();
+        if (visitors.isEmpty()) {
+            System.out.println("[База посетителей пуста]");
+            return;
         }
+        visitors.forEach(v -> System.out.printf("ID: %d | ФИО: %s | Email: %s | Тел: %s\n", 
+                v.getId(), v.getFullName(), v.getEmail(), v.getPhone()));
     }
 
-    private void manageBookings() {
-        while (true) {
-            System.out.println("\n--- Бронирования ---");
-            System.out.println("1. Создать бронирование");
-            System.out.println("2. Показать все бронирования");
-            System.out.println("3. Изменить статус бронирования");
-            System.out.println("4. Удалить бронирование");
-            System.out.println("0. Назад");
-            int choice = readInt("Выбор: ");
-            if (choice == 0) break;
+    private void showAllBookings() {
+        System.out.println("\n--- Все зарегистрированные бронирования ---");
+        printBookingList(zooService.getAllBookings());
+    }
 
-            switch (choice) {
-                case 1 -> {
-                    List<Visitor> visitors = zooService.getAllVisitors();
-                    if (visitors.isEmpty()) {
-                        System.out.println("Сначала добавьте посетителей.");
-                        break;
-                    }
-                    visitors.forEach(System.out::println);
-                    int visitorId = readInt("Введите ID посетителя: ");
-                    LocalDateTime date = readDateTime("Введите дату и время (yyyy-MM-dd HH:mm): ");
-                    int tickets = readInt("Введите количество билетов: ");
-                    zooService.createBooking(visitorId, date, tickets);
-                    System.out.println("✅ Бронирование создано!");
-                }
-                case 2 -> {
-                    List<Booking> bookings = zooService.getAllBookings();
-                    if (bookings.isEmpty()) {
-                        System.out.println("Список пуст.");
-                    } else {
-                        bookings.forEach(System.out::println);
-                    }
-                }
-                case 3 -> {
-                    int id = readInt("Введите ID бронирования: ");
-                    System.out.println("Доступные статусы: CREATED, CONFIRMED, COMPLETED, CANCELLED");
-                    BookingStatus status = readEnum("Введите новый статус: ");
-                    zooService.updateBookingStatus(id, status);
-                    System.out.println("✅ Статус обновлен!");
-                }
-                case 4 -> {
-                    int id = readInt("Введите ID бронирования для удаления: ");
-                    zooService.deleteBooking(id);
-                    System.out.println("✅ Бронирование удалено!");
-                }
-                default -> System.out.println("Неверный выбор.");
-            }
+    private void createBookingForm() throws BusinessException {
+        System.out.println("\n--- Регистрация нового бронирования билета ---");
+        System.out.print("Введите ID посетителя: ");
+        int visitorId = readIntegerInput();
+        System.out.print("Введите дату и время визита (ГГГГ-ММ-ДД ХХ:ММ): ");
+        LocalDateTime visitDate = readDateTimeInput();
+        System.out.print("Введите стоимость билета (целое число): ");
+        int price = readIntegerInput();
+
+        zooService.createBooking(visitorId, visitDate, price);
+        System.out.println("Успешно: Новое бронирование зафиксировано в СУБД.");
+    }
+
+    private void updateStatusForm() throws BusinessException {
+        System.out.print("Введите ID изменяемого бронирования: ");
+        int id = readIntegerInput();
+        System.out.println("Доступные статусы: 1. CREATED, 2. CONFIRMED, 3. COMPLETED, 4. CANCELLED");
+        System.out.print("Выберите номер нового статуса: ");
+        int statusNum = readIntegerInput();
+        
+        BookingStatus status = switch (statusNum) {
+            case 1 -> BookingStatus.CREATED;
+            case 2 -> BookingStatus.CONFIRMED;
+            case 3 -> BookingStatus.COMPLETED;
+            case 4 -> BookingStatus.CANCELLED;
+            default -> null;
+        };
+
+        if (status == null) {
+            System.out.println("Ошибка: Введен некорректный вариант статуса.");
+            return;
         }
+
+        zooService.updateBookingStatus(id, status);
+        System.out.println("Успешно: Статус записи обновлен.");
     }
 
-    private void searchBookings() {
-        System.out.println("\n--- Поиск бронирований по имени посетителя ---");
-        System.out.print("Введите часть имени: ");
-        String namePart = scanner.nextLine();
-        List<Booking> results = zooService.searchBookingsByVisitorName(namePart);
-        if (results.isEmpty()) {
-            System.out.println("Ничего не найдено.");
-        } else {
-            results.forEach(System.out::println);
-        }
+    private void deleteBookingForm() throws BusinessException {
+        System.out.print("Введите ID удаляемого бронирования: ");
+        int id = readIntegerInput();
+        zooService.deleteBooking(id);
+        System.out.println("Успешно: Запись удалена.");
     }
 
-    private void filterBookings() {
-        while (true) {
-            System.out.println("\n--- Фильтрация ---");
-            System.out.println("1. По статусу");
-            System.out.println("2. По диапазону дат");
-            System.out.println("0. Назад");
-            int choice = readInt("Выбор: ");
-            if (choice == 0) break;
-
-            switch (choice) {
-                case 1 -> {
-                    System.out.println("Доступные статусы: CREATED, CONFIRMED, COMPLETED, CANCELLED");
-                    BookingStatus status = readEnum("Введите статус: ");
-                    List<Booking> results = zooService.filterBookingsByStatus(status);
-                    if (results.isEmpty()) System.out.println("Ничего не найдено.");
-                    else results.forEach(System.out::println);
-                }
-                case 2 -> {
-                    LocalDateTime start = readDateTime("Введите начальную дату (yyyy-MM-dd HH:mm): ");
-                    LocalDateTime end = readDateTime("Введите конечную дату (yyyy-MM-dd HH:mm): ");
-                    List<Booking> results = zooService.filterBookingsByDateRange(start, end);
-                    if (results.isEmpty()) System.out.println("Ничего не найдено.");
-                    else results.forEach(System.out::println);
-                }
-                default -> System.out.println("Неверный выбор.");
+    private void searchAndFilterSubmenu() {
+        System.out.println("\n--- Меню поиска и фильтрации ---");
+        System.out.println("1. Найти бронирования по ФИО посетителя (или части имени)");
+        System.out.println("2. Фильтровать по статусу");
+        System.out.println("3. Фильтровать по диапазону дат и времени");
+        System.out.print("Выберите операцию: ");
+        
+        int subChoice = readIntegerInput();
+        switch (subChoice) {
+            case 1 -> {
+                System.out.print("Введите имя или его часть: ");
+                String namePart = scanner.nextLine().trim();
+                printBookingList(zooService.searchBookingsByVisitorName(namePart));
             }
+            case 2 -> {
+                System.out.println("1. CREATED, 2. CONFIRMED, 3. COMPLETED, 4. CANCELLED");
+                System.out.print("Выберите номер статуса: ");
+                int st = readIntegerInput();
+                if (st >= 1 && st <= 4) {
+                    printBookingList(zooService.filterBookingsByStatus(BookingStatus.values()[st - 1]));
+                } else {
+                    System.out.println("Некорректный выбор.");
+                }
+            }
+            case 3 -> {
+                System.out.print("Введите начальную дату (ГГГГ-ММ-ДД ХХ:ММ): ");
+                LocalDateTime start = readDateTimeInput();
+                System.out.print("Введите конечную дату (ГГГГ-ММ-ДД ХХ:ММ): ");
+                LocalDateTime end = readDateTimeInput();
+                printBookingList(zooService.filterBookingsByDateRange(start, end));
+            }
+            default -> System.out.println("Пункт меню не распознан. Возврат.");
         }
     }
 
     private void showStatistics() {
-        System.out.println("\n--- СТАТИСТИКА ---");
-        Map<String, Integer> stats = zooService.getStatistics();
-        stats.forEach((key, value) -> System.out.println(key + ": " + value));
+        System.out.println("\n" + zooService.getStatistics());
     }
 
-    private int readInt(String prompt) {
+    private void exportToExcelForm() {
+        String path = "bookings_report.xlsx";
+        try {
+            ExcelExporter.exportBookings(zooService.getAllBookings(), path);
+            System.out.println("Успешно: Отчет сгенерирован и сохранен в корень проекта под именем: " + path);
+        } catch (IOException e) {
+            System.out.println("Ошибка записи файла Excel: " + e.getMessage());
+        }
+    }
+
+    private void printBookingList(List<Booking> list) {
+        if (list.isEmpty()) {
+            System.out.println("[Данные не найдены]");
+            return;
+        }
+        list.forEach(b -> System.out.printf("ID: %d | Посетитель ID: %d | Дата визита: %s | Цена: %d руб. | Статус: %s\n",
+                b.getId(), b.getVisitorId(), b.getVisitDate().format(FORMATTER), b.getPrice(), b.getStatus()));
+    }
+
+    // --- Обработка ввода (Защита от аварийного завершения) ---
+
+    private int readIntegerInput() {
         while (true) {
             try {
-                System.out.print(prompt);
-                String input = scanner.nextLine().trim();
-                return Integer.parseInt(input);
+                return Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println("Ошибка: введите целое число.");
+                System.out.print("Ошибка: Требуется ввести целое число! Повторите: ");
             }
         }
     }
 
-    private LocalDateTime readDateTime(String prompt) {
+    private LocalDateTime readDateTimeInput() {
         while (true) {
             try {
-                System.out.print(prompt);
                 String input = scanner.nextLine().trim();
-                return LocalDateTime.parse(input, DATE_FORMATTER);
+                return LocalDateTime.parse(input, FORMATTER);
             } catch (DateTimeParseException e) {
-                System.out.println("Ошибка: неверный формат даты. Используйте yyyy-MM-dd HH:mm");
-            }
-        }
-    }
-
-    private BookingStatus readEnum(String prompt) {
-        while (true) {
-            try {
-                System.out.print(prompt);
-                String input = scanner.nextLine().trim().toUpperCase();
-                return BookingStatus.valueOf(input);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Ошибка: неверный статус. Попробуйте снова.");
+                System.out.print("Ошибка: Формат даты нарушен! Шаблон: ГГГГ-ММ-ДД ХХ:ММ (Пример: 2026-06-15 14:00). Повторите: ");
             }
         }
     }
