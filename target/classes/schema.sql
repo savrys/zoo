@@ -1,8 +1,8 @@
--- Полный сброс структуры перед инициализацией
+
 DROP TABLE IF EXISTS bookings;
 DROP TABLE IF EXISTS visitors;
 
--- Таблица участников предметной области (Посетители)
+
 CREATE TABLE visitors (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(150) NOT NULL,
@@ -10,17 +10,17 @@ CREATE TABLE visitors (
     phone VARCHAR(20) NOT NULL
 );
 
--- Таблица основной сущности (Бронирования билетов)
+
 CREATE TABLE bookings (
     id SERIAL PRIMARY KEY,
     visitor_id INT NOT NULL,
     visit_date DATE NOT NULL,
-    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
+    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),   
     status VARCHAR(20) NOT NULL,
     CONSTRAINT fk_visitor FOREIGN KEY (visitor_id) REFERENCES visitors(id) ON DELETE CASCADE
 );
 
--- Наполнение тестовыми данными (Обязательное требование ТЗ: не менее 5 пользователей)
+
 INSERT INTO visitors (full_name, email, phone) VALUES
 ('Иван Сергеевич Иванов', 'ivanov@mail.ru', '+79991112233'),
 ('Анна Игоревна Петрова', 'petrova@mail.ru', '+79992223344'),
@@ -28,7 +28,7 @@ INSERT INTO visitors (full_name, email, phone) VALUES
 ('Елена Николаевна Кузнецова', 'kuznec@mail.ru', '+79994445566'),
 ('Михаил Александрович Попов', 'popov@mail.ru', '+79995556677');
 
--- Наполнение тестовыми данными (Обязательное требование ТЗ: не менее 10 сущностей, не менее 3 статусов)
+
 INSERT INTO bookings (visitor_id, visit_date, price, status) VALUES
 (1, '2026-06-01', 500.00, 'CONFIRMED'),
 (1, '2026-06-15', 600.00, 'COMPLETED'),
