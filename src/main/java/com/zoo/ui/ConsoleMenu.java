@@ -192,21 +192,27 @@ public class ConsoleMenu {
 
     private void printBookingList(List<Booking> list) {
         if (list.isEmpty()) {
-            System.out.println("[Данные не найдены]");
+            System.out.println("[Список бронирований пуст]");
             return;
         }
-        list.forEach(b -> System.out.printf("ID: %d | Посетитель ID: %d | Дата визита: %s | Цена: %d руб. | Статус: %s\n",
-                b.getId(), b.getVisitorId(), b.getVisitDate().format(FORMATTER), b.getPrice(), b.getStatus()));
+        for (Booking booking : list) {
+            // ИСПРАВЛЕНО: Спецификатор %d изменен на %.2f для поддержки типа BigDecimal
+            System.out.printf("ID: %d | Посетитель ID: %d | Дата визита: %s | Статус: %s | Цена: %.2f\n",
+                    booking.getId(),
+                    booking.getVisitorId(),
+                    booking.getVisitDate() != null ? booking.getVisitDate().format(FORMATTER) : "N/A",
+                    booking.getStatus(),
+                    booking.getPrice() != null ? booking.getPrice() : java.math.BigDecimal.ZERO);
+        }
     }
-
-    // --- Обработка ввода (Защита от аварийного завершения) ---
 
     private int readIntegerInput() {
         while (true) {
             try {
-                return Integer.parseInt(scanner.nextLine().trim());
+                String input = scanner.nextLine().trim();
+                return Integer.parseInt(input);
             } catch (NumberFormatException e) {
-                System.out.print("Ошибка: Требуется ввести целое число! Повторите: ");
+                System.out.print("Ошибка ввода. Пожалуйста, введите целое число: ");
             }
         }
     }
@@ -217,7 +223,7 @@ public class ConsoleMenu {
                 String input = scanner.nextLine().trim();
                 return LocalDateTime.parse(input, FORMATTER);
             } catch (DateTimeParseException e) {
-                System.out.print("Ошибка: Формат даты нарушен! Шаблон: ГГГГ-ММ-ДД ХХ:ММ (Пример: 2026-06-15 14:00). Повторите: ");
+                System.out.print("Ошибка формата даты. Используйте шаблон (ГГГГ-ММ-ДД ХХ:ММ): ");
             }
         }
     }

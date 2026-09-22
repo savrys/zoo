@@ -14,36 +14,44 @@ import java.util.Optional;
 
 public class BookingRepositoryImpl implements BookingRepository {
 
-    @Override
-    public void save(Booking booking) {
-        String sql = "INSERT INTO bookings (visitor_id, visit_date, price, status) VALUES (?, ?, ?, ?)";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, booking.getVisitorId());
-            pstmt.setTimestamp(2, Timestamp.valueOf(booking.getVisitDate()));
-            pstmt.setInt(3, booking.getPrice());
-            pstmt.setString(4, booking.getStatus().name());
-            pstmt.executeUpdate();
-        } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка сохранения нового бронирования: " + e.getMessage());
+    private Booking mapRow(ResultSet rs) throws SQLException {
+        int ticketCount = rs.getInt("ticket_count");
+        if (rs.wasNull()) {
+            ticketCount = 1;
         }
+        
+        return new Booking(
+            rs.getInt("id"),
+            rs.getInt("visitor_id"),
+            rs.getTimestamp("visit_date").toLocalDateTime(),
+            ticketCount,
+            BookingStatus.valueOf(rs.getString("status")),
+            rs.getBigDecimal("price")
+        );
     }
 
     @Override
-    public Optional<Booking> findById(int id) {
-        String sql = "SELECT * FROM bookings WHERE id = ?";
+    public void save(Booking booking) {
+        String sql = "INSERT INTO bookings (visitor_id, visit_date, ticket_count, status, price) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRowToBooking(rs));
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            ps.setInt(1, booking.getVisitorId());
+            ps.setTimestamp(2, Timestamp.valueOf(booking.getVisitDate()));
+            ps.setInt(3, booking.getTicketCount() != null ? booking.getTicketCount() : 1);
+            ps.setString(4, booking.getStatus().name());
+            ps.setBigDecimal(5, booking.getPrice());
+            
+            ps.executeUpdate();
+            
+            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    booking.setId(generatedKeys.getInt(1));
                 }
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка поиска бронирования по ID: " + e.getMessage());
+            throw new RuntimeException("Ошибка сохранения бронирования", e);
         }
-        return Optional.empty();
     }
 
     @Override
@@ -54,58 +62,29 @@ public class BookingRepositoryImpl implements BookingRepository {
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                bookings.add(mapRowToBooking(rs));
+                bookings.add(mapRow(rs));
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка при выгрузке всех бронирований: " + e.getMessage());
+            throw new RuntimeException("Ошибка поиска всех бронирований", e);
         }
         return bookings;
     }
 
     @Override
-    public void update(Booking booking) {
-        String sql = "UPDATE bookings SET visitor_id = ?, visit_date = ?, price = ?, status = ? WHERE id = ?";
+    public Optional<Booking> findById(int id) {
+        String sql = "SELECT * FROM bookings WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, booking.getVisitorId());
-            pstmt.setTimestamp(2, Timestamp.valueOf(booking.getVisitDate()));
-            pstmt.setInt(3, booking.getPrice());
-            pstmt.setString(4, booking.getStatus().name());
-            pstmt.setInt(5, booking.getId());
-            pstmt.executeUpdate();
-        } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка обновления бронирования: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public void delete(int id) {
-        String sql = "DELETE FROM bookings WHERE id = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, id);
-            pstmt.executeUpdate();
-        } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка удаления бронирования: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public List<Booking> findByStatus(BookingStatus status) {
-        List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM bookings WHERE status = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, status.name());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    bookings.add(mapRowToBooking(rs));
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
                 }
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка фильтрации по статусу: " + e.getMessage());
+            throw new RuntimeException("Ошибка поиска бронирования по ID", e);
         }
-        return bookings;
+        return Optional.empty();
     }
 
     @Override
@@ -113,15 +92,29 @@ public class BookingRepositoryImpl implements BookingRepository {
         List<Booking> bookings = new ArrayList<>();
         String sql = "SELECT * FROM bookings WHERE visitor_id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, visitorId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    bookings.add(mapRowToBooking(rs));
-                }
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, visitorId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) bookings.add(mapRow(rs));
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка поиска по ID посетителя: " + e.getMessage());
+            throw new RuntimeException("Ошибка поиска по ID посетителя", e);
+        }
+        return bookings;
+    }
+
+    @Override
+    public List<Booking> findByStatus(BookingStatus status) {
+        List<Booking> bookings = new ArrayList<>();
+        String sql = "SELECT * FROM bookings WHERE status = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status.name());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) bookings.add(mapRow(rs));
+            }
+        } catch (SQLException | DatabaseException e) {
+            throw new RuntimeException("Ошибка поиска по статусу", e);
         }
         return bookings;
     }
@@ -131,53 +124,63 @@ public class BookingRepositoryImpl implements BookingRepository {
         List<Booking> bookings = new ArrayList<>();
         String sql = "SELECT * FROM bookings WHERE visit_date BETWEEN ? AND ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setTimestamp(1, Timestamp.valueOf(start));
-            pstmt.setTimestamp(2, Timestamp.valueOf(end));
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    bookings.add(mapRowToBooking(rs));
-                }
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setTimestamp(1, Timestamp.valueOf(start));
+            ps.setTimestamp(2, Timestamp.valueOf(end));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) bookings.add(mapRow(rs));
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка фильтрации по диапазону дат: " + e.getMessage());
+            throw new RuntimeException("Ошибка поиска по диапазону дат", e);
         }
         return bookings;
     }
 
     @Override
-    public List<Booking> searchByVisitorName(String namePart) {
+    public void update(Booking booking) {
+        String sql = "UPDATE bookings SET visitor_id = ?, visit_date = ?, ticket_count = ?, status = ?, price = ? WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, booking.getVisitorId());
+            ps.setTimestamp(2, Timestamp.valueOf(booking.getVisitDate()));
+            ps.setInt(3, booking.getTicketCount() != null ? booking.getTicketCount() : 1);
+            ps.setString(4, booking.getStatus().name());
+            ps.setBigDecimal(5, booking.getPrice());
+            ps.setInt(6, booking.getId());
+            ps.executeUpdate();
+        } catch (SQLException | DatabaseException e) {
+            throw new RuntimeException("Ошибка обновления бронирования", e);
+        }
+    }
+
+    @Override
+    public void delete(int id) {
+        String sql = "DELETE FROM bookings WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException | DatabaseException e) {
+            throw new RuntimeException("Ошибка удаления бронирования", e);
+        }
+    }
+
+    @Override
+    public List<Booking> searchByVisitorName(String name) {
         List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT b.* FROM bookings b JOIN visitors v ON b.visitor_id = v.id WHERE LOWER(v.full_name) LIKE LOWER(?)";
+        String sql = "SELECT b.* FROM bookings b JOIN visitors v ON b.visitor_id = v.id " +
+                     "WHERE v.first_name ILIKE ? OR v.last_name ILIKE ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, "%" + namePart + "%");
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    bookings.add(mapRowToBooking(rs));
-                }
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "%" + name + "%");
+            ps.setString(2, "%" + name + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) bookings.add(mapRow(rs));
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка поиска по имени посетителя: " + e.getMessage());
+            throw new RuntimeException("Ошибка поиска по имени посетителя", e);
         }
         return bookings;
-    }
-
-    @Override
-    public int countByStatus(BookingStatus status) {
-        String sql = "SELECT COUNT(*) FROM bookings WHERE status = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, status.name());
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка подсчета записей по статусу: " + e.getMessage());
-        }
-        return 0;
     }
 
     @Override
@@ -186,44 +189,40 @@ public class BookingRepositoryImpl implements BookingRepository {
         try (Connection conn = DatabaseConfig.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return rs.getInt(1);
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException | DatabaseException e) {
+            throw new RuntimeException("Ошибка подсчета всех записей", e);
+        }
+        return 0;
+    }
+
+    @Override
+    public int countByStatus(BookingStatus status) {
+        String sql = "SELECT COUNT(*) FROM bookings WHERE status = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status.name());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка подсчета всех записей: " + e.getMessage());
+            throw new RuntimeException("Ошибка подсчета по статусу", e);
         }
         return 0;
     }
 
     @Override
     public int countHighTicketCount(int minTickets) {
-        String sql = "SELECT COUNT(*) FROM bookings WHERE price > ?";
+        String sql = "SELECT COUNT(*) FROM bookings WHERE ticket_count >= ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, minTickets);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, minTickets);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка подсчета дорогих билетов: " + e.getMessage());
+            throw new RuntimeException("Ошибка подсчета крупных броней", e);
         }
         return 0;
-    }
-
-    private Booking mapRowToBooking(ResultSet rs) throws SQLException {
-        Booking booking = new Booking();
-        booking.setId(rs.getInt("id"));
-        booking.setVisitorId(rs.getInt("visitor_id"));
-        
-        Timestamp timestamp = rs.getTimestamp("visit_date");
-        if (timestamp != null) {
-            booking.setVisitDate(timestamp.toLocalDateTime());
-        }
-        
-        booking.setPrice(rs.getInt("price"));
-        booking.setStatus(BookingStatus.valueOf(rs.getString("status")));
-        return booking;
     }
 }

@@ -38,8 +38,10 @@ public class ExcelExporter {
                 row.createCell(0).setCellValue(booking.getId());
                 row.createCell(1).setCellValue(booking.getVisitorId());
                 row.createCell(2).setCellValue(booking.getVisitDate().toString());
-                row.createCell(3).setCellValue(booking.getPrice());
-                row.createCell(4).setCellValue(booking.getStatus().name());
+                // Пример фрагмента кода внутри цикла в ExcelExporter.java:
+                row.createCell(3).setCellValue(booking.getVisitDate().toString()); 
+                row.createCell(4).setCellValue(booking.getPrice() != null ? booking.getPrice().doubleValue() : 0.0); // ИСПРАВЛЕНО ЗДЕСЬ
+
             }
 
             // Автоподбор ширины столбцов
