@@ -27,9 +27,7 @@ public class ConsoleMenu {
 
     public void start() {
         while (true) {
-            System.out.println("\n========================================");
             System.out.println("     СИСТЕМА БРОНИРОВАНИЯ ЗООПАРКА     ");
-            System.out.println("========================================");
             System.out.println("1. Добавить нового посетителя");
             System.out.println("2. Просмотр списка посетителей");
             System.out.println("3. Просмотр всех бронирований");
