@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.zoo.controller.MainController">
+
+    <top>
+        <VBox spacing="8">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Label text="СИСТЕМА ЗООПАРКА — БРОНИРОВАНИЕ ПОСЕЩЕНИЙ"
+                   styleClass="title"/>
+
+            <HBox spacing="10">
+                <TextField fx:id="searchField"
+                           promptText="Поиск по имени посетителя или комментарию"
+                           HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="statusFilter" promptText="Статус"/>
+                <ComboBox fx:id="sortCombo" promptText="Сортировка"/>
+                <Button text="Найти" onAction="#onSearch"/>
+                <Button text="Сброс" onAction="#onRefresh"/>
+            </HBox>
+
+            <HBox spacing="10">
+                <Button text="Добавить" onAction="#onAdd" styleClass="btn-primary"/>
+                <Button text="Редактировать" onAction="#onEdit"/>
+                <Button text="Удалить" onAction="#onDelete" styleClass="btn-danger"/>
+                <Button text="Обновить" onAction="#onRefresh"/>
+                <Button text="Экспорт CSV" onAction="#onExport"/>
+                <Button text="Выход" onAction="#onExit"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="table">
+            <columns>
+                <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
+                <TableColumn fx:id="colVisitor" text="Посетитель" prefWidth="180"/>
+                <TableColumn fx:id="colDate" text="Дата" prefWidth="110"/>
+                <TableColumn fx:id="colTickets" text="Билетов" prefWidth="80"/>
+                <TableColumn fx:id="colPrice" text="Сумма" prefWidth="100"/>
+                <TableColumn fx:id="colStatus" text="Статус" prefWidth="110"/>
+                <TableColumn fx:id="colComment" text="Комментарий" prefWidth="250"/>
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <Label fx:id="statsLabel" styleClass="stats">
+            <padding>
+                <Insets top="8" right="10" bottom="8" left="10"/>
+            </padding>
+        </Label>
+    </bottom>
+</BorderPane>
