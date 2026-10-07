@@ -120,15 +120,12 @@ public class ZooServiceImpl implements ZooService {
         int vipTickets = bookingRepository.countHighTicketCount(800); // Билеты дороже 800 рублей
 
         return String.format(
-                "========================================\n" +
                 "          СТАТИСТИКА СИСТЕМЫ           \n" +
-                "========================================\n" +
                 "1. Всего бронирований в системе: %d\n" +
                 "2. В статусе ожидания (CREATED): %d\n" +
                 "3. Подтвержденных (CONFIRMED):   %d\n" +
                 "4. Успешно завершенных:          %d\n" +
-                "5. Из них премиум-билетов (>800р): %d\n" +
-                "========================================",
+                "5. Из них премиум-билетов (>800р): %d\n" ,
                 totalBookings, createdCount, confirmedCount, completedCount, vipTickets
         );
     }
