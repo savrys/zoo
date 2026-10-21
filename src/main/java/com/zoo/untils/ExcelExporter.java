@@ -6,53 +6,63 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class ExcelExporter {
-    
-    public static void exportBookings(List<Booking> bookings, String filePath) throws IOException {
-        try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Бронирования Зоопарка");
 
-            // Настройка стилей для шапки таблицы
+    /**
+     * Экспорт списка броней в Excel.
+     *
+     * @param bookings список броней (можно взять из таблицы или из БД)
+     * @param filePath путь к файлу .xlsx
+     */
+    public static void exportBookings(List<Booking> bookings, String filePath) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook();
+             FileOutputStream out = new FileOutputStream(filePath)) {
+
+            Sheet sheet = workbook.createSheet("Бронирования");
+
+            // Заголовок
+            String[] headers = {
+                    "ID", "ID посетителя", "Дата посещения",
+                    "Билетов", "Сумма", "Статус"
+            };
+
+            Row headerRow = sheet.createRow(0);
             CellStyle headerStyle = workbook.createCellStyle();
             Font font = workbook.createFont();
             font.setBold(true);
             headerStyle.setFont(font);
-            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            // Создание строки заголовков
-            Row headerRow = sheet.createRow(0);
-            String[] columns = {"ID Бронирования", "ID Посетителя", "Дата и время визита", "Стоимость билета", "Статус"};
-            for (int i = 0; i < columns.length; i++) {
+            for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columns[i]);
+                cell.setCellValue(headers[i]);
                 cell.setCellStyle(headerStyle);
             }
 
-            // Заполнение строк данными
+            // Данные
             int rowIdx = 1;
-            for (Booking booking : bookings) {
+            for (Booking b : bookings) {
                 Row row = sheet.createRow(rowIdx++);
-                row.createCell(0).setCellValue(booking.getId());
-                row.createCell(1).setCellValue(booking.getVisitorId());
-                row.createCell(2).setCellValue(booking.getVisitDate().toString());
-                // Пример фрагмента кода внутри цикла в ExcelExporter.java:
-                row.createCell(3).setCellValue(booking.getVisitDate().toString()); 
-                row.createCell(4).setCellValue(booking.getPrice() != null ? booking.getPrice().doubleValue() : 0.0); // ИСПРАВЛЕНО ЗДЕСЬ
 
+                row.createCell(0).setCellValue(b.getId() != null ? b.getId() : 0);
+                row.createCell(1).setCellValue(b.getVisitorId() != null ? b.getVisitorId() : 0);
+                row.createCell(2).setCellValue(
+                        b.getVisitDate() != null ? b.getVisitDate().toString() : "");
+                row.createCell(3).setCellValue(b.getTicketCount() != null ? b.getTicketCount() : 0);
+                row.createCell(4).setCellValue(
+                        b.getPrice() != null ? b.getPrice().doubleValue() : 0.0);
+                row.createCell(5).setCellValue(
+                        b.getStatus() != null ? b.getStatus().name() : "");
             }
 
-            // Автоподбор ширины столбцов
-            for (int i = 0; i < columns.length; i++) {
+            // Автоширина колонок
+            for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
             }
 
-            // Запись файла на диск
-            try (FileOutputStream fileOut = new FileOutputStream(filePath)) {
-                workbook.write(fileOut);
-            }
+            workbook.write(out);
         }
     }
 }

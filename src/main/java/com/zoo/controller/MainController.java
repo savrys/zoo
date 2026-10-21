@@ -30,25 +30,41 @@ import java.util.Map;
 public class MainController {
 
     // ---- Вкладка "Брони" ----
-    @FXML private TableView<Booking> table;
-    @FXML private TableColumn<Booking, Integer> colId;
-    @FXML private TableColumn<Booking, String> colVisitor;
-    @FXML private TableColumn<Booking, LocalDateTime> colDate;
-    @FXML private TableColumn<Booking, Integer> colTickets;
-    @FXML private TableColumn<Booking, BigDecimal> colPrice;
-    @FXML private TableColumn<Booking, BookingStatus> colStatus;
+    @FXML
+    private TableView<Booking> table;
+    @FXML
+    private TableColumn<Booking, Integer> colId;
+    @FXML
+    private TableColumn<Booking, String> colVisitor;
+    @FXML
+    private TableColumn<Booking, LocalDateTime> colDate;
+    @FXML
+    private TableColumn<Booking, Integer> colTickets;
+    @FXML
+    private TableColumn<Booking, BigDecimal> colPrice;
+    @FXML
+    private TableColumn<Booking, BookingStatus> colStatus;
 
-    @FXML private TextField searchField;
-    @FXML private ComboBox<BookingStatus> statusFilter;
-    @FXML private ComboBox<String> sortCombo;
-    @FXML private Label statsLabel;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private ComboBox<BookingStatus> statusFilter;
+    @FXML
+    private ComboBox<String> sortCombo;
+    @FXML
+    private Label statsLabel;
 
     // ---- Вкладка "Посетители" ----
-    @FXML private TableView<Visitor> visitorTable;
-    @FXML private TableColumn<Visitor, Integer> vColId;
-    @FXML private TableColumn<Visitor, String> vColName;
-    @FXML private TableColumn<Visitor, String> vColEmail;
-    @FXML private TableColumn<Visitor, String> vColPhone;
+    @FXML
+    private TableView<Visitor> visitorTable;
+    @FXML
+    private TableColumn<Visitor, Integer> vColId;
+    @FXML
+    private TableColumn<Visitor, String> vColName;
+    @FXML
+    private TableColumn<Visitor, String> vColEmail;
+    @FXML
+    private TableColumn<Visitor, String> vColPhone;
 
     private final BookingRepository bookingRepo = new BookingRepositoryImpl();
     private final VisitorRepository visitorRepo = new VisitorRepositoryImpl();
@@ -123,13 +139,15 @@ public class MainController {
             if (sort != null) {
                 List<Booking> sortable = new ArrayList<>(list);
                 switch (sort) {
-                    case "Дата ↑"    -> sortable.sort((a, b) -> a.getVisitDate().compareTo(b.getVisitDate()));
-                    case "Дата ↓"    -> sortable.sort((a, b) -> b.getVisitDate().compareTo(a.getVisitDate()));
-                    case "Сумма ↑"   -> sortable.sort((a, b) -> safePrice(a).compareTo(safePrice(b)));
-                    case "Сумма ↓"   -> sortable.sort((a, b) -> safePrice(b).compareTo(safePrice(a)));
-                    case "Билетов ↑" -> sortable.sort((a, b) -> Integer.compare(a.getTicketCount(), b.getTicketCount()));
-                    case "Билетов ↓" -> sortable.sort((a, b) -> Integer.compare(b.getTicketCount(), a.getTicketCount()));
-                    default          -> sortable.sort((a, b) -> Integer.compare(a.getId(), b.getId()));
+                    case "Дата ↑" -> sortable.sort((a, b) -> a.getVisitDate().compareTo(b.getVisitDate()));
+                    case "Дата ↓" -> sortable.sort((a, b) -> b.getVisitDate().compareTo(a.getVisitDate()));
+                    case "Сумма ↑" -> sortable.sort((a, b) -> safePrice(a).compareTo(safePrice(b)));
+                    case "Сумма ↓" -> sortable.sort((a, b) -> safePrice(b).compareTo(safePrice(a)));
+                    case "Билетов ↑" ->
+                            sortable.sort((a, b) -> Integer.compare(a.getTicketCount(), b.getTicketCount()));
+                    case "Билетов ↓" ->
+                            sortable.sort((a, b) -> Integer.compare(b.getTicketCount(), a.getTicketCount()));
+                    default -> sortable.sort((a, b) -> Integer.compare(a.getId(), b.getId()));
                 }
                 list = sortable;
             }
@@ -162,18 +180,31 @@ public class MainController {
         }
     }
 
-    @FXML private void onRefresh() {
+    @FXML
+    private void onRefresh() {
         searchField.clear();
         statusFilter.setValue(null);
         sortCombo.setValue(null);
         refresh();
     }
-    @FXML private void onSearch() { refresh(); }
 
-    @FXML private void onAdd()   { openBookingForm(null); }
-    @FXML private void onEdit()  {
+    @FXML
+    private void onSearch() {
+        refresh();
+    }
+
+    @FXML
+    private void onAdd() {
+        openBookingForm(null);
+    }
+
+    @FXML
+    private void onEdit() {
         Booking sel = table.getSelectionModel().getSelectedItem();
-        if (sel == null) { showError("Выберите запись"); return; }
+        if (sel == null) {
+            showError("Выберите запись");
+            return;
+        }
         openBookingForm(sel);
     }
 
@@ -197,7 +228,10 @@ public class MainController {
     @FXML
     private void onDelete() {
         Booking sel = table.getSelectionModel().getSelectedItem();
-        if (sel == null) { showError("Выберите запись"); return; }
+        if (sel == null) {
+            showError("Выберите запись");
+            return;
+        }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Удалить бронь #" + sel.getId() + "?",
                 ButtonType.OK, ButtonType.CANCEL);
@@ -223,7 +257,10 @@ public class MainController {
         }
     }
 
-    @FXML private void onRefreshVisitors() { refreshVisitors(); }
+    @FXML
+    private void onRefreshVisitors() {
+        refreshVisitors();
+    }
 
     @FXML
     private void onAddVisitor() {
@@ -233,7 +270,10 @@ public class MainController {
     @FXML
     private void onEditVisitor() {
         Visitor sel = visitorTable.getSelectionModel().getSelectedItem();
-        if (sel == null) { showError("Выберите посетителя"); return; }
+        if (sel == null) {
+            showError("Выберите посетителя");
+            return;
+        }
         openVisitorForm(sel);
     }
 
@@ -258,7 +298,10 @@ public class MainController {
     @FXML
     private void onDeleteVisitor() {
         Visitor sel = visitorTable.getSelectionModel().getSelectedItem();
-        if (sel == null) { showError("Выберите посетителя"); return; }
+        if (sel == null) {
+            showError("Выберите посетителя");
+            return;
+        }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Удалить посетителя \"" + sel.getFullName() + "\"?",
                 ButtonType.OK, ButtonType.CANCEL);
@@ -277,7 +320,10 @@ public class MainController {
 
     // ================== ОБЩЕЕ ==================
 
-    @FXML private void onExit() { System.exit(0); }
+    @FXML
+    private void onExit() {
+        System.exit(0);
+    }
 
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -286,5 +332,30 @@ public class MainController {
         alert.setContentText(msg);
         alert.getDialogPane().setGraphic(null);  // без иконки
         alert.showAndWait();
+    }
+
+    @FXML
+    private void onExport() {
+        javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+        fc.setTitle("Экспорт броней");
+        fc.getExtensionFilters().add(
+                new javafx.stage.FileChooser.ExtensionFilter("Excel", "*.xlsx"));
+        fc.setInitialFileName("bookings_report.xlsx");
+
+        java.io.File file = fc.showSaveDialog(table.getScene().getWindow());
+        if (file == null) return;
+
+        try {
+            com.zoo.untils.ExcelExporter.exportBookings(data, file.getAbsolutePath());
+
+            javafx.scene.control.Alert info = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.INFORMATION);
+            info.setTitle("Успех");
+            info.setHeaderText(null);
+            info.setContentText("Экспортировано: " + file.getName());
+            info.showAndWait();
+        } catch (Exception e) {
+            showError("Ошибка экспорта: " + e.getMessage());
+        }
     }
 }

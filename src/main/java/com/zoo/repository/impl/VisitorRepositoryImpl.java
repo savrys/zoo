@@ -22,7 +22,7 @@ public class VisitorRepositoryImpl implements VisitorRepository {
             pstmt.setString(3, visitor.getPhone());
             pstmt.executeUpdate();
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка сохранения посетителя: " + e.getMessage());
+            throw new RuntimeException("Ошибка сохранения посетителя: " + e.getMessage(), e);
         }
     }
 
@@ -43,7 +43,7 @@ public class VisitorRepositoryImpl implements VisitorRepository {
                 }
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка поиска посетителя по ID: " + e.getMessage());
+            throw new RuntimeException("Ошибка поиска посетителя по ID: " + e.getMessage(), e);
         }
         return Optional.empty();
     }
@@ -51,7 +51,7 @@ public class VisitorRepositoryImpl implements VisitorRepository {
     @Override
     public List<Visitor> findAll() {
         List<Visitor> visitors = new ArrayList<>();
-        String sql = "SELECT * FROM visitors";
+        String sql = "SELECT * FROM visitors ORDER BY id";
         try (Connection conn = DatabaseConfig.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -64,7 +64,7 @@ public class VisitorRepositoryImpl implements VisitorRepository {
                 visitors.add(v);
             }
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка выгрузки посетителей: " + e.getMessage());
+            throw new RuntimeException("Ошибка выгрузки посетителей: " + e.getMessage(), e);
         }
         return visitors;
     }
@@ -80,7 +80,7 @@ public class VisitorRepositoryImpl implements VisitorRepository {
             pstmt.setInt(4, visitor.getId());
             pstmt.executeUpdate();
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка обновления посетителя: " + e.getMessage());
+            throw new RuntimeException("Ошибка обновления посетителя: " + e.getMessage(), e);
         }
     }
 
@@ -92,7 +92,7 @@ public class VisitorRepositoryImpl implements VisitorRepository {
             pstmt.setInt(1, id);
             pstmt.executeUpdate();
         } catch (SQLException | DatabaseException e) {
-            System.err.println("Ошибка удаления посетителя: " + e.getMessage());
+            throw new RuntimeException("Ошибка удаления посетителя: " + e.getMessage(), e);
         }
     }
 }

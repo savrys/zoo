@@ -63,6 +63,7 @@
                         <Button text="Добавить посетителя" onAction="#onAddVisitor" styleClass="btn-primary"/>
                         <Button text="Редактировать" onAction="#onEditVisitor"/>
                         <Button text="Удалить" onAction="#onDeleteVisitor" styleClass="btn-danger"/>
+                        <Button text="Экспорт в Excel" onAction="#onExport"/>
                         <Button text="Обновить" onAction="#onRefreshVisitors"/>
                     </HBox>
 
