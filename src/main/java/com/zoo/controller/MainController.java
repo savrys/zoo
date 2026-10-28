@@ -18,8 +18,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,42 +31,26 @@ import java.util.Map;
 
 public class MainController {
 
-    // ---- Вкладка "Брони" ----
-    @FXML
-    private TableView<Booking> table;
-    @FXML
-    private TableColumn<Booking, Integer> colId;
-    @FXML
-    private TableColumn<Booking, String> colVisitor;
-    @FXML
-    private TableColumn<Booking, LocalDateTime> colDate;
-    @FXML
-    private TableColumn<Booking, Integer> colTickets;
-    @FXML
-    private TableColumn<Booking, BigDecimal> colPrice;
-    @FXML
-    private TableColumn<Booking, BookingStatus> colStatus;
+    // ====== ВКЛАДКА 1: БРОНИ ======
+    @FXML private TableView<Booking> table;
+    @FXML private TableColumn<Booking, Integer> colId;
+    @FXML private TableColumn<Booking, String> colVisitor;
+    @FXML private TableColumn<Booking, LocalDateTime> colDate;
+    @FXML private TableColumn<Booking, Integer> colTickets;
+    @FXML private TableColumn<Booking, BigDecimal> colPrice; // 👈 КОЛОНКА СУММЫ
+    @FXML private TableColumn<Booking, BookingStatus> colStatus;
 
-    @FXML
-    private TextField searchField;
-    @FXML
-    private ComboBox<BookingStatus> statusFilter;
-    @FXML
-    private ComboBox<String> sortCombo;
-    @FXML
-    private Label statsLabel;
+    @FXML private TextField searchField;
+    @FXML private ComboBox<BookingStatus> statusFilter;
+    @FXML private ComboBox<String> sortCombo;
+    @FXML private Label statsLabel;
 
-    // ---- Вкладка "Посетители" ----
-    @FXML
-    private TableView<Visitor> visitorTable;
-    @FXML
-    private TableColumn<Visitor, Integer> vColId;
-    @FXML
-    private TableColumn<Visitor, String> vColName;
-    @FXML
-    private TableColumn<Visitor, String> vColEmail;
-    @FXML
-    private TableColumn<Visitor, String> vColPhone;
+    // ====== ВКЛАДКА 2: ПОСЕТИТЕЛИ ======
+    @FXML private TableView<Visitor> visitorTable;
+    @FXML private TableColumn<Visitor, Integer> vColId;
+    @FXML private TableColumn<Visitor, String> vColName;
+    @FXML private TableColumn<Visitor, String> vColEmail;
+    @FXML private TableColumn<Visitor, String> vColPhone;
 
     private final BookingRepository bookingRepo = new BookingRepositoryImpl();
     private final VisitorRepository visitorRepo = new VisitorRepositoryImpl();
@@ -75,13 +61,16 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        // === Колонки броней ===
+        // Настройка колонок броней
         colId.setCellValueFactory(cd -> new SimpleIntegerProperty(cd.getValue().getId()).asObject());
         colVisitor.setCellValueFactory(cd -> new SimpleStringProperty(
                 visitorNames.getOrDefault(cd.getValue().getVisitorId(), "—")));
         colDate.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().getVisitDate()));
         colTickets.setCellValueFactory(cd -> new SimpleIntegerProperty(cd.getValue().getTicketCount()).asObject());
+
+        // 👇 ПРИВЯЗКА СУММЫ
         colPrice.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().getPrice()));
+
         colStatus.setCellValueFactory(cd -> new SimpleObjectProperty<>(cd.getValue().getStatus()));
 
         statusFilter.setItems(FXCollections.observableArrayList(BookingStatus.values()));
@@ -90,7 +79,7 @@ public class MainController {
 
         table.setItems(data);
 
-        // === Колонки посетителей ===
+        // Настройка колонок посетителей
         vColId.setCellValueFactory(cd -> new SimpleIntegerProperty(cd.getValue().getId()).asObject());
         vColName.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getFullName()));
         vColEmail.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getEmail()));
@@ -106,17 +95,19 @@ public class MainController {
 
     private void loadVisitorNames() {
         visitorNames.clear();
-        for (Visitor v : visitorRepo.findAll()) {
-            visitorNames.put(v.getId(), v.getFullName());
-        }
+        try {
+            for (Visitor v : visitorRepo.findAll()) {
+                visitorNames.put(v.getId(), v.getFullName());
+            }
+        } catch (Exception ignored) {}
     }
 
     private void refresh() {
         try {
             loadVisitorNames();
-
             List<Booking> list = bookingRepo.findAll();
 
+            // Поиск
             String q = searchField.getText();
             if (q != null && !q.isBlank()) {
                 String lower = q.trim().toLowerCase();
@@ -128,6 +119,7 @@ public class MainController {
                 list = filtered;
             }
 
+            // Фильтр
             BookingStatus s = statusFilter.getValue();
             if (s != null) {
                 List<Booking> filtered = new ArrayList<>();
@@ -135,19 +127,18 @@ public class MainController {
                 list = filtered;
             }
 
+            // Сортировка
             String sort = sortCombo.getValue();
             if (sort != null) {
                 List<Booking> sortable = new ArrayList<>(list);
                 switch (sort) {
-                    case "Дата ↑" -> sortable.sort((a, b) -> a.getVisitDate().compareTo(b.getVisitDate()));
-                    case "Дата ↓" -> sortable.sort((a, b) -> b.getVisitDate().compareTo(a.getVisitDate()));
-                    case "Сумма ↑" -> sortable.sort((a, b) -> safePrice(a).compareTo(safePrice(b)));
-                    case "Сумма ↓" -> sortable.sort((a, b) -> safePrice(b).compareTo(safePrice(a)));
-                    case "Билетов ↑" ->
-                            sortable.sort((a, b) -> Integer.compare(a.getTicketCount(), b.getTicketCount()));
-                    case "Билетов ↓" ->
-                            sortable.sort((a, b) -> Integer.compare(b.getTicketCount(), a.getTicketCount()));
-                    default -> sortable.sort((a, b) -> Integer.compare(a.getId(), b.getId()));
+                    case "Дата ↑"    -> sortable.sort((a, b) -> a.getVisitDate().compareTo(b.getVisitDate()));
+                    case "Дата ↓"    -> sortable.sort((a, b) -> b.getVisitDate().compareTo(a.getVisitDate()));
+                    case "Сумма ↑"   -> sortable.sort((a, b) -> safePrice(a).compareTo(safePrice(b)));
+                    case "Сумма ↓"   -> sortable.sort((a, b) -> safePrice(b).compareTo(safePrice(a)));
+                    case "Билетов ↑" -> sortable.sort((a, b) -> Integer.compare(a.getTicketCount(), b.getTicketCount()));
+                    case "Билетов ↓" -> sortable.sort((a, b) -> Integer.compare(b.getTicketCount(), a.getTicketCount()));
+                    default          -> sortable.sort((a, b) -> Integer.compare(a.getId(), b.getId()));
                 }
                 list = sortable;
             }
@@ -155,7 +146,7 @@ public class MainController {
             data.setAll(list);
             updateStats();
         } catch (Exception e) {
-            showError("Ошибка загрузки броней: " + e.getMessage());
+            System.err.println("Ошибка загрузки броней: " + e.getMessage());
         }
     }
 
@@ -180,31 +171,18 @@ public class MainController {
         }
     }
 
-    @FXML
-    private void onRefresh() {
+    @FXML private void onRefresh() {
         searchField.clear();
         statusFilter.setValue(null);
         sortCombo.setValue(null);
         refresh();
     }
+    @FXML private void onSearch() { refresh(); }
 
-    @FXML
-    private void onSearch() {
-        refresh();
-    }
-
-    @FXML
-    private void onAdd() {
-        openBookingForm(null);
-    }
-
-    @FXML
-    private void onEdit() {
+    @FXML private void onAdd()   { openBookingForm(null); }
+    @FXML private void onEdit()  {
         Booking sel = table.getSelectionModel().getSelectedItem();
-        if (sel == null) {
-            showError("Выберите запись");
-            return;
-        }
+        if (sel == null) { showError("Выберите запись"); return; }
         openBookingForm(sel);
     }
 
@@ -228,10 +206,7 @@ public class MainController {
     @FXML
     private void onDelete() {
         Booking sel = table.getSelectionModel().getSelectedItem();
-        if (sel == null) {
-            showError("Выберите запись");
-            return;
-        }
+        if (sel == null) { showError("Выберите запись"); return; }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Удалить бронь #" + sel.getId() + "?",
                 ButtonType.OK, ButtonType.CANCEL);
@@ -247,33 +222,45 @@ public class MainController {
         });
     }
 
-    // ================== ПОСЕТИТЕЛИ ==================
+    @FXML
+    private void onExport() {
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Экспорт броней");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel", "*.xlsx"));
+        fc.setInitialFileName("bookings_report.xlsx");
+
+        File file = fc.showSaveDialog(table.getScene().getWindow());
+        if (file == null) return;
+
+        try {
+            com.zoo.untils.ExcelExporter.exportBookings(data, file.getAbsolutePath());
+            Alert info = new Alert(Alert.AlertType.INFORMATION);
+            info.setTitle("Успех");
+            info.setHeaderText(null);
+            info.setContentText("Экспортировано: " + file.getName());
+            info.showAndWait();
+        } catch (Exception e) {
+            showError("Ошибка экспорта: " + e.getMessage());
+        }
+    }
+
+
 
     private void refreshVisitors() {
         try {
             visitorData.setAll(visitorRepo.findAll());
         } catch (Exception e) {
-            showError("Ошибка загрузки посетителей: " + e.getMessage());
+            System.err.println("Ошибка загрузки посетителей: " + e.getMessage());
         }
     }
 
-    @FXML
-    private void onRefreshVisitors() {
-        refreshVisitors();
-    }
+    @FXML private void onRefreshVisitors() { refreshVisitors(); }
 
-    @FXML
-    private void onAddVisitor() {
-        openVisitorForm(null);
-    }
+    @FXML private void onAddVisitor() { openVisitorForm(null); }
 
-    @FXML
-    private void onEditVisitor() {
+    @FXML private void onEditVisitor() {
         Visitor sel = visitorTable.getSelectionModel().getSelectedItem();
-        if (sel == null) {
-            showError("Выберите посетителя");
-            return;
-        }
+        if (sel == null) { showError("Выберите посетителя"); return; }
         openVisitorForm(sel);
     }
 
@@ -289,7 +276,7 @@ public class MainController {
             stage.setScene(new Scene(root));
             stage.showAndWait();
             refreshVisitors();
-            refresh(); // чтобы обновились имена в таблице броней
+            refresh();
         } catch (Exception e) {
             showError("Ошибка открытия формы: " + e.getMessage());
         }
@@ -298,10 +285,7 @@ public class MainController {
     @FXML
     private void onDeleteVisitor() {
         Visitor sel = visitorTable.getSelectionModel().getSelectedItem();
-        if (sel == null) {
-            showError("Выберите посетителя");
-            return;
-        }
+        if (sel == null) { showError("Выберите посетителя"); return; }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Удалить посетителя \"" + sel.getFullName() + "\"?",
                 ButtonType.OK, ButtonType.CANCEL);
@@ -318,38 +302,19 @@ public class MainController {
         });
     }
 
-    // ================== ОБЩЕЕ ==================
-
     @FXML
-    private void onExit() {
-        System.exit(0);
-    }
+    private void onExportVisitors() {
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Экспорт посетителей");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel", "*.xlsx"));
+        fc.setInitialFileName("visitors_report.xlsx");
 
-    private void showError(String msg) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Ошибка");
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        alert.getDialogPane().setGraphic(null);  // без иконки
-        alert.showAndWait();
-    }
-
-    @FXML
-    private void onExport() {
-        javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
-        fc.setTitle("Экспорт броней");
-        fc.getExtensionFilters().add(
-                new javafx.stage.FileChooser.ExtensionFilter("Excel", "*.xlsx"));
-        fc.setInitialFileName("bookings_report.xlsx");
-
-        java.io.File file = fc.showSaveDialog(table.getScene().getWindow());
+        File file = fc.showSaveDialog(visitorTable.getScene().getWindow());
         if (file == null) return;
 
         try {
-            com.zoo.untils.ExcelExporter.exportBookings(data, file.getAbsolutePath());
-
-            javafx.scene.control.Alert info = new javafx.scene.control.Alert(
-                    javafx.scene.control.Alert.AlertType.INFORMATION);
+            com.zoo.untils.ExcelExporter.exportVisitors(visitorData, file.getAbsolutePath());
+            Alert info = new Alert(Alert.AlertType.INFORMATION);
             info.setTitle("Успех");
             info.setHeaderText(null);
             info.setContentText("Экспортировано: " + file.getName());
@@ -357,5 +322,17 @@ public class MainController {
         } catch (Exception e) {
             showError("Ошибка экспорта: " + e.getMessage());
         }
+    }
+
+
+    @FXML private void onExit() { System.exit(0); }
+
+    private void showError(String msg) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Ошибка");
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.getDialogPane().setGraphic(null);
+        alert.showAndWait();
     }
 }

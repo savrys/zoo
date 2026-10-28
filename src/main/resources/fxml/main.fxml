@@ -36,16 +36,20 @@
                         <Button text="Редактировать" onAction="#onEdit"/>
                         <Button text="Удалить" onAction="#onDelete" styleClass="btn-danger"/>
                         <Button text="Обновить" onAction="#onRefresh"/>
+                        <Button text="Экспорт в Excel" onAction="#onExport"/>
                         <Button text="Выход" onAction="#onExit"/>
                     </HBox>
 
                     <TableView fx:id="table" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colId" text="ID" prefWidth="50"/>
-                            <TableColumn fx:id="colVisitor" text="Посетитель" prefWidth="220"/>
-                            <TableColumn fx:id="colDate" text="Дата посещения" prefWidth="160"/>
+                            <TableColumn fx:id="colVisitor" text="Посетитель" prefWidth="200"/>
+                            <TableColumn fx:id="colDate" text="Дата и время" prefWidth="160"/>
                             <TableColumn fx:id="colTickets" text="Билетов" prefWidth="80"/>
-                            <TableColumn fx:id="colPrice" text="Сумма" prefWidth="100"/>
+
+                            <!-- КОЛОНКА СУММЫ -->
+                            <TableColumn fx:id="colPrice" text="Сумма (руб)" prefWidth="100"/>
+
                             <TableColumn fx:id="colStatus" text="Статус" prefWidth="130"/>
                         </columns>
                     </TableView>
@@ -63,16 +67,16 @@
                         <Button text="Добавить посетителя" onAction="#onAddVisitor" styleClass="btn-primary"/>
                         <Button text="Редактировать" onAction="#onEditVisitor"/>
                         <Button text="Удалить" onAction="#onDeleteVisitor" styleClass="btn-danger"/>
-                        <Button text="Экспорт в Excel" onAction="#onExport"/>
                         <Button text="Обновить" onAction="#onRefreshVisitors"/>
+                        <Button text="Экспорт в Excel" onAction="#onExportVisitors"/>
                     </HBox>
 
                     <TableView fx:id="visitorTable" VBox.vgrow="ALWAYS">
                         <columns>
-                            <TableColumn fx:id="vColId" text="ID" prefWidth="60"/>
-                            <TableColumn fx:id="vColName" text="ФИО" prefWidth="300"/>
-                            <TableColumn fx:id="vColEmail" text="Email" prefWidth="250"/>
-                            <TableColumn fx:id="vColPhone" text="Телефон" prefWidth="200"/>
+                            <TableColumn fx:id="vColId" text="ID" prefWidth="50"/>
+                            <TableColumn fx:id="vColName" text="ФИО" prefWidth="250"/>
+                            <TableColumn fx:id="vColEmail" text="Email" prefWidth="200"/>
+                            <TableColumn fx:id="vColPhone" text="Телефон" prefWidth="150"/>
                         </columns>
                     </TableView>
                 </VBox>

@@ -6,7 +6,6 @@ public class Visitor {
     private String email;
     private String phone;
 
-    // Обязательный пустой конструктор по умолчанию
     public Visitor() {}
 
     public Visitor(int id, String fullName, String email, String phone) {
@@ -27,4 +26,9 @@ public class Visitor {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    @Override
+    public String toString() {
+        return fullName;
+    }
 }

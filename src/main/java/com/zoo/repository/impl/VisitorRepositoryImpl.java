@@ -21,7 +21,13 @@ public class VisitorRepositoryImpl implements VisitorRepository {
             pstmt.setString(2, visitor.getEmail());
             pstmt.setString(3, visitor.getPhone());
             pstmt.executeUpdate();
-        } catch (SQLException | DatabaseException e) {
+        } catch (SQLException e) {
+            // Проверка  одинакогого email
+            if (e.getMessage().contains("visitors_email_key") || e.getMessage().contains("duplicate key")) {
+                throw new RuntimeException("Этот email уже зарегистрирован в системе. Пожалуйста, введите другой.");
+            }
+            throw new RuntimeException("Ошибка сохранения посетителя: " + e.getMessage(), e);
+        } catch (DatabaseException e) {
             throw new RuntimeException("Ошибка сохранения посетителя: " + e.getMessage(), e);
         }
     }
